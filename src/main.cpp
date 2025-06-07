@@ -50,116 +50,35 @@ float calculateAngle(float x, float y, float z, char axis) {
     return 0;
 }
 
-// Function to estimate ball velocity and position
-void updateBallState(float angleX, float angleY, float deltaTime) {
-    if (deltaTime > 0) {
-        // Calculate velocity based on angle change
-        float deltaAngleX = angleX - lastAngleX;
-        float deltaAngleY = angleY - lastAngleY;
-        
-        // Update velocity estimates with low-pass filter
-        ballVelocityX = ballVelocityX * 0.85 + (deltaAngleX / deltaTime) * 0.15;
-        ballVelocityY = ballVelocityY * 0.85 + (deltaAngleY / deltaTime) * 0.15;
-        
-        // Integrate velocity to estimate position (relative to starting point)
-        ballPositionX += ballVelocityX * deltaTime;
-        ballPositionY += ballVelocityY * deltaTime;
-        
-        // Apply decay to position to prevent drift
-        ballPositionX *= 0.999;
-        ballPositionY *= 0.999;
+void adjustPlatform(float angleX) {
+    // Adjust servo angle to compensate for tilt
+    // If platform is tilted down (positive angle), servo needs to move up
+    int adjustment = -angleX;  // Inverse relationship
+    
+    // Limit adjustment to prevent extreme movements
+    adjustment = constrain(adjustment, -45, 45);
+    
+    // Calculate new servo position
+    // int newAngle = initialAngle + adjustment;
+    int newAngle = currentAngle + adjustment;
+    newAngle = constrain(newAngle, 0, 180);
+    
+    // Only move if there's a significant change
+    if (abs(currentAngle - newAngle) > 0.5) {
+        currentAngle = newAngle;
+        servoX.write(currentAngle);
     }
     
     lastAngleX = angleX;
     lastAngleY = angleY;
 }
 
-// Function to calculate required tilt for vector-based control
-float calculateVectorTilt(float targetComponent, float currentVelocity, float currentPosition) {
-    // If no target vector (targetVectorX and targetVectorY are <0,0>), aim to stop the ball.
-    if (abs(targetVectorX) < 0.001 && abs(targetVectorY) < 0.001) {
-        return -kd_velocity * currentVelocity - ki_position * currentPosition;
-    }
-    
-    // targetComponent is assumed to be part of a pre-normalized vector from computer vision.
-    float currentSpeedInDirection = currentVelocity * (targetComponent > 0 ? 1 : (targetComponent < 0 ? -1 : 0));
-    
-    float speedError = targetSpeed - abs(currentSpeedInDirection);
-    float directionTilt = kp_direction * targetComponent * speedError;
-    
-    float velocityDamping = -kd_velocity * currentVelocity;
-    float positionCorrection = -ki_position * currentPosition;
-    float totalTilt = directionTilt + velocityDamping + positionCorrection;
-    
-    if (abs(currentVelocity) > maxSpeed) {
-        totalTilt = -kd_velocity * currentVelocity * 2;
-    }
-    
-    return constrain(totalTilt, -maxTiltAngle, maxTiltAngle);
-}
-
-// Function to adjust platform for vector-based control
-void adjustPlatform(float platformAngleX, float platformAngleY) {
-    int servoAngleX_calc, servoAngleY_calc; // Use local variables for calculation
-    bool isInAutoBalance = (abs(targetVectorX) < 0.001 && abs(targetVectorY) < 0.001);
-    
-    if (isInAutoBalance) {
-        servoAngleX_calc = initialAngle - platformAngleX;
-        servoAngleY_calc = initialAngle - platformAngleY;
-    } else {
-        float tiltX = calculateVectorTilt(targetVectorX, ballVelocityX, ballPositionX);
-        float tiltY = calculateVectorTilt(targetVectorY, ballVelocityY, ballPositionY);
-        servoAngleX_calc = initialAngle + tiltX;
-        servoAngleY_calc = initialAngle + tiltY;
-    }
-    
-    // Update global current servo angles for monitoring and control
-    currentAngleX = constrain(servoAngleX_calc, 0, 180);
-    currentAngleY = constrain(servoAngleY_calc, 0, 180);
-
-    servoX.write(currentAngleX);
-    servoY.write(currentAngleY);
-}
-
-// Function to process Bluetooth commands
-void processBluetoothCommand() {
-    if (bluetooth.available()) {
-        String command = bluetooth.readStringUntil('\n');
-        command.trim();
-        
-        if (command.startsWith("VECTOR")) {
-            int spaceIndex1 = command.indexOf(' ');
-            int spaceIndex2 = command.indexOf(' ', spaceIndex1 + 1);
-            
-            if (spaceIndex1 > 0 && spaceIndex2 > 0) {
-                targetVectorX = command.substring(spaceIndex1 + 1, spaceIndex2).toFloat();
-                targetVectorY = command.substring(spaceIndex2 + 1).toFloat();
-                
-                if (abs(targetVectorX) < 0.001 && abs(targetVectorY) < 0.001) {
-                    sendBluetoothMessage(bluetooth, "Mode: Auto-balance (target <0,0>)");
-                    ballPositionX = 0;
-                    ballPositionY = 0;
-                } else {
-                    sendBluetoothMessageNoLn(bluetooth, "Mode: Vector Control. Target: X=");
-                    sendBluetoothMessageNoLn(bluetooth, String(targetVectorX));
-                    sendBluetoothMessageNoLn(bluetooth, " Y=");
-                    sendBluetoothMessage(bluetooth, String(targetVectorY));
-                }
-            }
-        }
-        else if (command.startsWith("STATUS")) {
-            bool isInAutoBalance = (abs(targetVectorX) < 0.001 && abs(targetVectorY) < 0.001);
-            printBluetoothStatus(bluetooth, isInAutoBalance, targetVectorX, targetVectorY, 
-                                 ballVelocityX, ballVelocityY, ballPositionX, ballPositionY, 
-                                 targetSpeed, currentAngleX, currentAngleY, 
-                                 kp_direction, kd_velocity, ki_position, maxTiltAngle, maxSpeed);
-        }
-    }
+    delay(50);
 }
 
 void setup() {
     Serial.begin(9600);
-    bluetooth.begin(9600);
+    Serial.println("test!");
     
     // Initialize control parameters
     kp_direction = 1.5;
@@ -207,8 +126,10 @@ void loop() {
     processBluetoothCommand();
     adjustPlatform(platformAngleX_val, platformAngleY_val);
     
-    bool isInAutoBalance = (abs(targetVectorX) < 0.001 && abs(targetVectorY) < 0.001);
-    printSerialStatus(isInAutoBalance, targetVectorX, targetVectorY, ballVelocityX, ballVelocityY, platformAngleX_val, platformAngleY_val, currentAngleX, currentAngleY);
+    // Check if platform is level
+    if (abs(angleX) < 0.5) {
+        Serial.println("X-axis is level!");
+    }
     
     delay(15);
 }
