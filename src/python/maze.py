@@ -60,7 +60,7 @@ def breadth_first_search(graph, source, target, next_level=3):
     if not find_target:
         raise ValueError("Target is not reachable from source.")
         
-    # Return the direction
+    # Return the overall direction
     overall_direction = (0, 0)
     current_grid = target
 
