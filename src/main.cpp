@@ -37,16 +37,17 @@ void adjustPlatform(float angleX) {
     newAngle = constrain(newAngle, 0, 180);
     
     // Only move if there's a significant change
-    if (abs(currentAngle - newAngle) > 1) {
+    if (abs(currentAngle - newAngle) > 0.5) {
         currentAngle = newAngle;
         servoX.write(currentAngle);
     }
 
-    delay(15);
+    delay(50);
 }
 
 void setup() {
     Serial.begin(9600);
+    Serial.println("test!");
     
     // Initialize the sensor
     if(!accel.begin()) {
@@ -80,7 +81,7 @@ void loop() {
     adjustPlatform(angleX);
     
     // Check if platform is level
-    if (abs(angleX) <= 1.0) {
+    if (abs(angleX) < 0.5) {
         Serial.println("X-axis is level!");
     }
     
