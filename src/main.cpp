@@ -20,67 +20,62 @@ float currentAngleY = 90;
 // Bluetooth setup
 SoftwareSerial bluetooth(10, 11); // RX, TX pins for HC-05
 
-// Control variables
-float tiltX = 0.0;
-float tiltY = 0.0;
-unsigned long lastTime = 0;
+// PID control variables for X and Y axes
+float kp = 0.4;  // Proportional gain
+float ki = 0.01;  // Integral gain
+float kd = 0.04; // Derivative gain
+
+float errorX = 0.0, errorY = 0.0;
+float prevErrorX = 0.0, prevErrorY = 0.0;
+float integralX = 0.0, integralY = 0.0;
+
+// Add these variables for filtering
+float filteredAngleX = 0.0;
+float filteredAngleY = 0.0;
+const float alpha = 0.1; // Smoothing factor (0 < alpha <= 1)
 
 // Function to convert acceleration to degrees
 float calculateAngle(float mainAcc, float auxAcc1, float auxAcc2) {
     return atan2(mainAcc, sqrt(auxAcc1 * auxAcc1 + auxAcc2 * auxAcc2)) * 180.0 / PI;
 }
 
-// Function to adjust platform based on accelerometer and commands
-void adjustPlatform(float actualPlatformAngleX, float actualPlatformAngleY) {
-    float deltaThetaX = (tiltX - actualPlatformAngleX);
-    float deltaThetaY = (tiltY - actualPlatformAngleY);
-
-
-    Serial.print("(cur, target) X: (");
-    Serial.print(currentAngleX);
-    currentAngleX = constrain(currentAngleX + 0.6 * deltaThetaX, 80, 100);
-    Serial.print(", ");
-    Serial.print(currentAngleX);
-    Serial.print(") Y: (");
-    Serial.print(currentAngleY);
-    Serial.print(", ");
-    currentAngleY = constrain(currentAngleY + 0.6 * deltaThetaY, 80, 100);
-    Serial.print(currentAngleY);
-    Serial.println(")");
-
-
-
-    servoX.write(constrain(currentAngleX, 80, 100));
-    servoY.write(constrain(currentAngleY, 80, 100));
-    delay(20);
+// PID control function
+float calculatePID(float error, float &prevError, float &integral) {
+    integral += error; // Accumulate the integral
+    float derivative = error - prevError; // Calculate the derivative
+    prevError = error; // Update the previous error
+    return (kp * error) + (ki * integral) + (kd * derivative); // PID formula
 }
 
-// Function to process Bluetooth commands
-void processBluetoothCommand() {
-    static int TTL = 0;
-    if (bluetooth.available()) {
-        String command = bluetooth.readStringUntil('\n');
-        command.trim();
-        
-        if (command.startsWith("VECTOR")) {
-            int spaceIndex1 = command.indexOf(' ');
-            int spaceIndex2 = command.indexOf(' ', spaceIndex1 + 1);
-            
-            if (spaceIndex1 > 0 && spaceIndex2 > 0) {
-                tiltX = command.substring(spaceIndex1 + 1, spaceIndex2).toFloat();
-                tiltY = command.substring(spaceIndex2 + 1).toFloat();
-                // No Bluetooth feedback messages to keep it simple
-            }
-        }
+// Function to adjust platform using PID control
+void adjustPlatform(float actualPlatformAngleX, float actualPlatformAngleY) {
+    const float deadband = 0.5; // Ignore errors smaller than 0.5 degrees
 
-        // Reset TTL when a command is received
-        TTL = 3;
-    } else if (TTL == 0) {
-        tiltX = 0.0;
-        tiltY = 0.0;
-    } else {
-        TTL--;
-    }
+    // Calculate errors (desired angle is 0 for balancing)
+    errorX = 0.0 - actualPlatformAngleX;
+    errorY = 0.0 - actualPlatformAngleY;
+
+    // Apply deadband
+    if (abs(errorX) < deadband) errorX = 0.0;
+    if (abs(errorY) < deadband) errorY = 0.0;
+
+    // Calculate PID outputs
+    float pidOutputX = calculatePID(errorX, prevErrorX, integralX);
+    float pidOutputY = calculatePID(errorY, prevErrorY, integralY);
+    
+    Serial.print("PID Output X: ");
+    Serial.println(pidOutputX);
+    Serial.print("PID Output Y: ");
+    Serial.println(pidOutputY);
+
+    // Calculate new servo angles
+    currentAngleX = constrain(90 + pidOutputX, 80, 100); // Constrain to servo limits
+    currentAngleY = constrain(90 + pidOutputY, 80, 100); // Constrain to servo limits
+
+    // Write new angles to servos
+    servoX.write(currentAngleX);
+    servoY.write(currentAngleY);
+    delay(100);
 }
 
 void setup() {
@@ -91,7 +86,7 @@ void setup() {
     // Initialize the sensor
     if (!accel.begin()) {
         Serial.println("No ADXL345 sensor detected!");
-        while(1); // Halt if sensor not found
+        while (1); // Halt if sensor not found
     }
     
     // Set the range to +-2G (can be adjusted if needed)
@@ -102,13 +97,11 @@ void setup() {
     servoY.attach(servoPinY);
     servoX.write(currentAngleX); 
     servoY.write(currentAngleY); 
-    delay(100); 
-    
-    // lastTime = millis();
+    delay(4000); 
 }
 
 void loop() {
-    // sensors_event_t event;
+    sensors_event_t event;
     bluetooth.println("Ready to receive commands...");
 
     if (bluetooth.available()) {
@@ -122,57 +115,22 @@ void loop() {
         Serial.println(command);
     }
     
-    // unsigned long currentTime = millis();
-    // lastTime = currentTime;
-    // while (false) {
-    //     for (int i = 60; i <= 100; i++) {
-    //         servoX.write(i);
-    //         Serial.print("Servo X Angle: ");
-    //         Serial.println(i);
-    //         delay(100);
-    //     }
-    
-    //     for (int i = 80; i <= 100; i++) {
-    //         servoY.write(i);
-    //         Serial.print("Servo Y Angle: ");
-    //         Serial.println(i);
-    //         delay(100);
-    //     }
-    
-    //     for (int i = 100; i >= 80; i--) {
-    //         servoX.write(i);
-    //         Serial.print("Servo X Angle: ");
-    //         Serial.println(i);
-    //         delay(100);
-    //     }
-    
-    //     for (int i = 100; i >= 80; i--) {
-    //         servoY.write(i);
-    //         Serial.print("Servo Y Angle: ");
-    //         Serial.println(i);
-    //         delay(100);
-    //     }
-    // }
-    
-    
     // Adjust platform based on accelerometer readings and any processed command
-    // accel.getEvent(&event); // Get a new sensor event
-    // float platformAngleX_val = calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
-    // float platformAngleY_val = -calculateAngle(event.acceleration.y, event.acceleration.x, event.acceleration.z);
+    accel.getEvent(&event); // Get a new sensor event
 
-    // // processBluetoothCommand();
-    // Serial.print("Platform Angle X: ");
-    // Serial.println(platformAngleX_val);
-    // Serial.print("Platform Angle Y: ");
-    // Serial.println(platformAngleY_val);
+    // Calculate platform angles
+    float rawAngleX = calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
+    float rawAngleY = -calculateAngle(event.acceleration.y, event.acceleration.x, event.acceleration.z);
 
-    // adjustPlatform(platformAngleX_val, platformAngleY_val);
-    // tiltX = (i - 2) * 5;
+    // Apply low-pass filter
+    for (int i = 0; i < 10; i++) {
+        filteredAngleX = alpha * rawAngleX + (1 - alpha) * filteredAngleX;
+        filteredAngleY = alpha * rawAngleY + (1 - alpha) * filteredAngleY;
+        delay(1);
+    }
 
-    // tiltX = i - 2;
-    // tiltY = j - 2;
-    // adjustPlatform(platformAngleX_val, platformAngleY_val);
-    // delay(2000);
-    
-    // delay(15); // Loop delay
+    // Adjust platform using filtered angles
+    adjustPlatform(filteredAngleX, filteredAngleY);
+
+    delay(1500); // Loop delay
 }

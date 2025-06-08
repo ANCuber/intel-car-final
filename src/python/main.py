@@ -1,4 +1,5 @@
-import cv2, logging
+# import cv2
+import logging
 import numpy as np
 
 from BTinterface import BTInterface
@@ -65,6 +66,6 @@ def testBT(bt_port):
 
 if __name__ == "__main__":
     # Change the port to your Bluetooth device
-    testBT(bt_port="/dev/cu.HC-05")
+    testBT(bt_port="COM4")
     exit(0)
     main()
