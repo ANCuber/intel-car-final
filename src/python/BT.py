@@ -23,9 +23,10 @@ class Bluetooth:
         log.info(f"Connecting to {port}...")
         try:
             self.serial = Serial(port, 9600, timeout=2)
-            log.info("Success\n")
+            while not self.serial.is_open: pass
+            log.info("Success")
         except SerialException:
-            log.warning("Fail to connect\n")
+            log.warning("Fail to connect")
             return False
         return True
 

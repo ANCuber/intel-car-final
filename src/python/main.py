@@ -1,9 +1,15 @@
-import cv2
+import cv2, logging
 import numpy as np
 
 from BTinterface import BTInterface
 from maze import process_grid, breadth_first_search
 from read_image import grab_info
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+
+log = logging.getLogger(__name__)
 
 def get_instruction(cap):
     # Read the current frame from the webcam
@@ -51,6 +57,14 @@ def main(bt_port: str):
     cap.release()
     cv2.destroyAllWindows()
 
+def testBT(bt_port):
+    interface = BTInterface(port=bt_port)
+    interface.send_instruction("R")
+    msg = interface.fetch_info()
+    print(msg)
 
 if __name__ == "__main__":
+    # Change the port to your Bluetooth device
+    testBT(bt_port="/dev/cu.HC-05")
+    exit(0)
     main()
