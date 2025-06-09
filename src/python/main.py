@@ -39,7 +39,7 @@ def read_message(arduino):
 
 def main(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
     # Open webcam
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     if not cap.isOpened():
         raise RuntimeError("Could not open webcam.")
 
@@ -50,8 +50,8 @@ def main(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
     # Main loop
     while True:
         # Get the instruction
-        # instruction = get_instruction(cap=cap)
-        instruction = (13, 7)
+        instruction = get_instruction(cap=cap)
+        # instruction = (13, 7)
         if instruction is None:
             continue
         
