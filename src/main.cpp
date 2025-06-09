@@ -5,6 +5,7 @@
 #include <Servo.h>
 #include <stdlib.h>
 #include <SoftwareSerial.h>
+#include <stdint.h>
 
 // Accelerometer setup
 Adafruit_ADXL345_Unified accel(12345);
@@ -25,9 +26,10 @@ float currentAngleY = theta0;
 bool flgX = 0;
 bool flgY = 0;
 
-// Bluetooth setup
-SoftwareSerial bluetooth(10, 11); // RX, TX pins for HC-05
+// Serial I/O
+const int32_t baudrate = 115200;
 
+// PID control
 float kp = 1;  // Proportional gain
 float ki = 0;  // Integral gain
 float kd = 0; // Derivative gain
@@ -83,9 +85,10 @@ void noobAdjust() {
 }
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(baudrate);
     delay(500);
-    bluetooth.begin(9600);
+
+    return;
 
     // Initialize the sensor
     if (!accel.begin()) {
@@ -113,6 +116,29 @@ void setup() {
     noobAdjust(); // Initial adjustment based on sensor data
 }
 
+void copy_instruction() {
+    Serial.println("Got the instruction!");
+}
+
+void read_instruction() { // Use ONE and ONLY ONE println() in this function
+    if (Serial.available()) {
+        String message = Serial.readStringUntil('\n');
+        int commaIndex = message.indexOf(',');
+
+        String part1 = message.substring(0, commaIndex);
+        String part2 = message.substring(commaIndex + 1);
+
+        int num1 = part1.toInt();
+        int num2 = part2.toInt();
+
+        Serial.print("First received number: ");
+        Serial.print(num1);
+        Serial.print(", Second received number: ");
+        Serial.println(num2);
+    }
+}
+
 void loop() {
     
+    read_instruction();
 }

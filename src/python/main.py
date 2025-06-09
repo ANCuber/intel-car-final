@@ -1,8 +1,9 @@
-# import cv2
-import logging
+from asyncio import sleep
+import cv2, logging
 import numpy as np
+import serial
+import time
 
-from BTinterface import BTInterface
 from maze import process_grid, breadth_first_search
 from read_image import grab_info
 
@@ -27,45 +28,62 @@ def get_instruction(cap):
     overall_direction = breadth_first_search(graph, tar_pos, ball_pos)
     return overall_direction
 
-def main(bt_port: str):
+def send_instruction(arduino, instruction: str):
+    arduino.write(instruction.encode())
+
+def read_message(arduino):
+    while True:
+        response = arduino.readline().decode().strip()
+        if response:
+            return response
+
+def main(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
     # Open webcam
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         raise RuntimeError("Could not open webcam.")
 
+    # Build serial connection
+    arduino = serial.Serial(port=port, baudrate=baudrate, timeout=1)
+    time.sleep(sleep_time)  # Wait for the connection to establish
 
-    #  Bluetooth 
-    interface = BTInterface(port=bt_port)
-    interface.send_instruction("R")
-
+    # Main loop
     while True:
         # Get the instruction
-        instruction = get_instruction(cap=cap)
+        # instruction = get_instruction(cap=cap)
+        instruction = (13, 7)
         if instruction is None:
             continue
         
         # Send the instruction
-        print(instruction)
-        interface.send_instruction(str(instruction[0]))
-        interface.send_instruction(str(instruction[1]))
-        _ = interface.fetch_info()
+        instruction_to_send = str(instruction[0])+','+str(instruction[1])
+        send_instruction(arduino=arduino, instruction=instruction_to_send)
+        logging.info(f"Instruction sent: {instruction_to_send}")
+
+        _ = read_message(arduino)
+        logging.info(f"Instruction received by Arduino.")
 
         # Exit on 'q' key
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     
-    # Release the webcam and close all OpenCV windows
+    # Release stuffs
     cap.release()
     cv2.destroyAllWindows()
+    arduino.close()
 
-def testBT(bt_port):
-    interface = BTInterface(port=bt_port)
-    interface.send_instruction("R")
-    msg = interface.fetch_info()
-    print(msg)
+
+def testSerial(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
+    arduino = serial.Serial(port=port, baudrate=baudrate, timeout=1)
+    time.sleep(sleep_time)  # Wait for the connection to establish
+
+    for i in range(5):
+        instruction = f"{i},{i+1}"
+        send_instruction(arduino=arduino, instruction=instruction)
+        response = read_message(arduino)
+        logging.info(f"Arduino says: {response}")
+    
+    arduino.close()
 
 if __name__ == "__main__":
-    # Change the port to your Bluetooth device
-    testBT(bt_port="COM4")
-    exit(0)
-    main()
+    main(port="/dev/cu.usbserial-130")
