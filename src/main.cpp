@@ -20,7 +20,7 @@ const float thetaRange = 20;
 const float theta0 = 40;
 const float thetaL = theta0 - thetaRange;
 const float thetaR = theta0 + thetaRange;
-const float deadband = 0.5;
+const float deadband = 0.85;
 float currentAngleX = theta0;
 float currentAngleY = theta0;
 bool flgX = 0;
@@ -41,7 +41,7 @@ float integralX = 0.0, integralY = 0.0;
 // Add these variables for filtering
 float filteredAngleX = 0.0;
 float filteredAngleY = 0.0;
-const float alpha = 0.4; // Smoothing factor (0 < alpha <= 1)
+const float alpha = 0.8; // Smoothing factor (0 < alpha <= 1)
 
 // Function to convert acceleration to degrees
 float calculateAngle(float mainAcc, float auxAcc1, float auxAcc2) {
@@ -56,15 +56,13 @@ float calculatePID(float error, float &prevError, float &integral) {
     return (kp * error) + (ki * integral) + (kd * derivative); // PID formula
 }
 
-void noobAdjust() {
+void getAngle() {
     sensors_event_t event;
     filteredAngleX = filteredAngleY = 0.0;
     for (int i = 0; i < 10; i++) {
         accel.getEvent(&event);
-        float rawAngleX = -4.2 + calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
+        float rawAngleX = 3.8 - calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
         float rawAngleY = -2.2 + calculateAngle(event.acceleration.y, event.acceleration.x, event.acceleration.z);
-
-        // (-5, 2)
 
         filteredAngleX = alpha * rawAngleX + (1 - alpha) * filteredAngleX;
         filteredAngleY = alpha * rawAngleY + (1 - alpha) * filteredAngleY;
@@ -76,19 +74,42 @@ void noobAdjust() {
     Serial.println(filteredAngleX);
     Serial.print("Filtered Angle Y: ");
     Serial.println(filteredAngleY);
+}
 
-    currentAngleX = constrain(currentAngleX + filteredAngleX, thetaL, thetaR);
-    currentAngleY = constrain(currentAngleY + filteredAngleY, thetaL, thetaR);
+void tilt(int deltaX, int deltaY) {
+    getAngle();
 
-    servoX.write(currentAngleX);
-    servoY.write(currentAngleY);
+    if (fabs(filteredAngleX + deltaX) > deadband) {
+        currentAngleX = constrain(currentAngleX + filteredAngleX + deltaX, thetaL, thetaR);
+        servoX.write(currentAngleX);
+    }
+    if (fabs(filteredAngleY + deltaY) > deadband) {
+        currentAngleY = constrain(currentAngleY + filteredAngleY + deltaY, thetaL, thetaR);
+        servoY.write(currentAngleY);
+    }
+
+    Serial.print("Current Angle X: ");
+    Serial.println(currentAngleX);
+    Serial.print("Current Angle Y: ");
+    Serial.println(currentAngleY);
+}
+
+void noobAdjust() {
+    getAngle();
+
+    if (fabs(filteredAngleX) > deadband) {
+        currentAngleX = constrain(currentAngleX + filteredAngleX, thetaL, thetaR);
+        servoX.write(currentAngleX);
+    }
+    if (fabs(filteredAngleY) > deadband) {
+        currentAngleY = constrain(currentAngleY + filteredAngleY, thetaL, thetaR);
+        servoY.write(currentAngleY);
+    }
 }
 
 void setup() {
     Serial.begin(baudrate);
     delay(500);
-
-    return;
 
     // Initialize the sensor
     if (!accel.begin()) {
@@ -110,17 +131,20 @@ void setup() {
     Serial.print("Servo Y angle: ");
     Serial.println(currentAngleY);
 
-    Serial.println("Servos initialized, starting in 6 seconds.");
-    delay(6000);
+    Serial.println("Servos initialized, starting in a few seconds.");
+    delay(2500);
 
-    noobAdjust(); // Initial adjustment based on sensor data
+    for (int i = 0; i < 5; ++i) {
+        noobAdjust(); // Initial adjustment based on sensor data
+        delay(100);
+    }
 }
 
 void copy_instruction() {
     Serial.println("Got the instruction!");
 }
 
-void read_instruction() { // Use ONE and ONLY ONE println() in this function
+void read(int& deltaX, int& deltaY) { // Use ONE and ONLY ONE println()
     if (Serial.available()) {
         String message = Serial.readStringUntil('\n');
         int commaIndex = message.indexOf(',');
@@ -128,17 +152,20 @@ void read_instruction() { // Use ONE and ONLY ONE println() in this function
         String part1 = message.substring(0, commaIndex);
         String part2 = message.substring(commaIndex + 1);
 
-        int num1 = part1.toInt();
-        int num2 = part2.toInt();
+        deltaX = part1.toInt();
+        deltaY = part2.toInt();
 
         Serial.print("First received number: ");
-        Serial.print(num1);
+        Serial.print(deltaX);
         Serial.print(", Second received number: ");
-        Serial.println(num2);
+        Serial.println(deltaY);
     }
 }
 
 void loop() {
-    
-    read_instruction();
+    int deltaX = 0, deltaY = 5;
+    read(deltaX, deltaY);
+    tilt(deltaX, deltaY);
+    while (true);
+    delay(100);
 }
