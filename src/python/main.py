@@ -37,7 +37,7 @@ def read_message(arduino):
         if response:
             return response
 
-def main(port: str, baudrate: int = 9600, sleep_time: int = 1.5):
+def main(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
     # Open webcam
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -50,15 +50,18 @@ def main(port: str, baudrate: int = 9600, sleep_time: int = 1.5):
     # Main loop
     while True:
         # Get the instruction
-        instruction = get_instruction(cap=cap)
+        # instruction = get_instruction(cap=cap)
+        instruction = (13, 7)
         if instruction is None:
             continue
         
         # Send the instruction
-        logging.info(f"Sending instruction: {instruction}")
-        arduino.write(str(instruction[0]).encode())
-        arduino.write(str(instruction[1]).encode())
+        instruction_to_send = str(instruction[0])+','+str(instruction[1])
+        send_instruction(arduino=arduino, instruction=instruction_to_send)
+        logging.info(f"Instruction sent: {instruction_to_send}")
+
         _ = read_message(arduino)
+        logging.info(f"Instruction received by Arduino.")
 
         # Exit on 'q' key
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -70,19 +73,17 @@ def main(port: str, baudrate: int = 9600, sleep_time: int = 1.5):
     arduino.close()
 
 
-def testSerial(port: str, baudrate: int = 9600, sleep_time: int = 1.5):
+def testSerial(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
     arduino = serial.Serial(port=port, baudrate=baudrate, timeout=1)
     time.sleep(sleep_time)  # Wait for the connection to establish
 
     for i in range(5):
-        send_instruction(arduino=arduino, instruction=str(i))
-        
+        instruction = f"{i},{i+1}"
+        send_instruction(arduino=arduino, instruction=instruction)
         response = read_message(arduino)
         logging.info(f"Arduino says: {response}")
     
     arduino.close()
 
 if __name__ == "__main__":
-    testSerial(port="/dev/cu.usbserial-120")
-    exit(0)
-    main(port="/dev/cu.usbserial-120")
+    main(port="/dev/cu.usbserial-130")
