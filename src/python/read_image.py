@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
 
-def grab_info(cap, rows=100, cols=100, length=600): # Grid size
+def grab_info(cap, rows=100, cols=100, rlength=900, clength=900): # Grid size
     # Wrong inputs
-    if length % rows != 0 or length % cols != 0:
+    if rlength % rows != 0 or clength % cols != 0:
         raise ValueError("rows and cols must divide length evenly.")
     
     ret, frame = cap.read()
@@ -13,7 +13,7 @@ def grab_info(cap, rows=100, cols=100, length=600): # Grid size
         return None
     
     # Resize for consistent processing
-    frame = cv2.resize(frame, (length, length))
+    frame = cv2.resize(frame, (rlength, clength))
     h, w, _ = frame.shape
 
     # Initialize classification grid
@@ -28,8 +28,8 @@ def grab_info(cap, rows=100, cols=100, length=600): # Grid size
     mask_red2 = cv2.inRange(hsv, np.array([160, 100, 100]), np.array([180, 255, 255]))
     mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
-    mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 50]))
-    mask_white = cv2.inRange(hsv, np.array([0, 0, 200]), np.array([180, 50, 255]))
+    mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 90]))
+    mask_white = cv2.inRange(hsv, np.array([0, 0, 120]), np.array([180, 50, 255]))
     mask_green = cv2.inRange(hsv, np.array([40, 100, 100]), np.array([85, 255, 255]))
     mask_blue = cv2.inRange(hsv, np.array([100, 100, 100]), np.array([130, 255, 255]))
 
@@ -75,7 +75,7 @@ def grab_info(cap, rows=100, cols=100, length=600): # Grid size
     
 if __name__ == "__main__":
     # Open webcam (0 is usually the default camera)
-    cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
+    cap = cv2.VideoCapture(0)
 
     # print("Testing camera indices with AVFoundation:")
     # for i in range(5):
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     cnt = 1
     while True:
-        current_grid = grab_info(cap=cap)
+        current_grid = grab_info(cap=cap, rows=150, cols=150, rlength=600, clength=600)
         if current_grid is None:
             continue
         

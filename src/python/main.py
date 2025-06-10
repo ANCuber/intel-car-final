@@ -15,14 +15,14 @@ log = logging.getLogger(__name__)
 
 def get_instruction(cap):
     # Read the current frame from the webcam
-    current_grid = grab_info(cap=cap)
+    current_grid = grab_info(cap=cap, rows=150, cols=150)
     if current_grid is None:
-        return None
+        return (0, 0)
 
     # Process the grid to find the ball and target positions
     graph, ball_pos, tar_pos = process_grid(current_grid)
     if ball_pos is None or tar_pos is None:
-        return None
+        return (0, 0)
 
     # BFS
     overall_direction = breadth_first_search(graph, tar_pos, ball_pos)
@@ -37,9 +37,9 @@ def read_message(arduino):
         if response:
             return response
 
-def main(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
+def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
     # Open webcam
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(cam_id)
     if not cap.isOpened():
         raise RuntimeError("Could not open webcam.")
 
@@ -47,21 +47,26 @@ def main(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
     arduino = serial.Serial(port=port, baudrate=baudrate, timeout=1)
     time.sleep(sleep_time)  # Wait for the connection to establish
 
+    logging.info("Arduino resetting...")
+    send_instruction(arduino=arduino, instruction="0,0") # Reset the Arduino
+    _ = read_message(arduino)
+    logging.info("Arduino reset complete.")
+
     # Main loop
     while True:
         # Get the instruction
         instruction = get_instruction(cap=cap)
-        # instruction = (13, 7)
-        if instruction is None:
-            continue
         
         # Send the instruction
-        instruction_to_send = str(instruction[0])+','+str(instruction[1])
+        # instruction_to_send = f"{instruction[1]},{-instruction[0]}"
+        instruction_to_send = f"0,5"
         send_instruction(arduino=arduino, instruction=instruction_to_send)
         logging.info(f"Instruction sent: {instruction_to_send}")
 
         _ = read_message(arduino)
-        logging.info(f"Instruction received by Arduino.")
+        _ = read_message(arduino)
+        logging.info(f"Arduino says: {_}")
+        # logging.info(f"Instruction received by Arduino.")
 
         # Exit on 'q' key
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -86,4 +91,4 @@ def testSerial(port: str, baudrate: int = 115200, sleep_time: int = 1.5):
     arduino.close()
 
 if __name__ == "__main__":
-    main(port="/dev/cu.usbserial-130")
+    main(port="/dev/cu.usbserial-120", cam_id=0)

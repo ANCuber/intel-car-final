@@ -1,21 +1,22 @@
 import numpy as np
 from collections import deque
 
-def process_grid(current_grid, ball_color='B', wall_color='D', floor_color='W', target_color='G'):
+def process_grid(current_grid, ball_color='R', wall_color='D', floor_color='W', target_color='G'):
     cols, rows = len(current_grid[0]), len(current_grid)
-    graph = [[0 for _ in range(cols)] for _ in range(rows)]
+    graph = [[1 for _ in range(cols)] for _ in range(rows)]
     ball_pos, ball_cnt = (0, 0), 0
     tar_pos, tar_cnt = (0, 0), 0
 
     for i in range(rows):
         for j in range(cols):
+            graph[i][j] = 0
             if current_grid[i][j] == ball_color:
                 ball_pos = (i + ball_pos[0], j + ball_pos[1])
                 ball_cnt += 1
             elif current_grid[i][j] == target_color:
                 tar_pos = (i + tar_pos[0], j + tar_pos[1])
                 tar_cnt += 1
-            elif current_grid[i][j] == wall_color: 
+            elif current_grid[i][j] != floor_color: 
                 graph[i][j] = 1
 
     ball_pos = (ball_pos[0] // ball_cnt, ball_pos[1] // ball_cnt) if ball_cnt > 0 else None
@@ -23,9 +24,10 @@ def process_grid(current_grid, ball_color='B', wall_color='D', floor_color='W', 
 
     return graph, ball_pos, tar_pos
 
-def breadth_first_search(graph, source, target, next_level=3):
+def breadth_first_search(graph, source, target, next_level=5):
     if graph[source[0]][source[1]] == 1 or graph[target[0]][target[1]] == 1:
-        raise ValueError("Source or target is not reachable.")
+        return (0, 0)
+        # raise ValueError("Source or target is not reachable.")
 
     if source == target:
         return (0, 0) # Do not move if we are already at the source
@@ -58,7 +60,8 @@ def breadth_first_search(graph, source, target, next_level=3):
             visited[dx[i] + current[0]][dy[i] + current[1]] = (i ^ 1) # Store the direction from which we came
 
     if not find_target:
-        raise ValueError("Target is not reachable from source.")
+        return (0, 0)
+        # raise ValueError("Target is not reachable from source.")
         
     # Return the overall direction
     overall_direction = (0, 0)
