@@ -42,6 +42,10 @@ float filteredAngleX = 0.0;
 float filteredAngleY = 0.0;
 const float alpha = 0.8; // Smoothing factor (0 < alpha <= 1)
 
+// Instructions by python
+int deltaX, deltaY;
+int beta = 1;
+
 // Function to convert acceleration to degrees
 float calculateAngle(float mainAcc, float auxAcc1, float auxAcc2) {
     return atan2(mainAcc, sqrt(auxAcc1 * auxAcc1 + auxAcc2 * auxAcc2)) * 180.0 / PI;
@@ -66,7 +70,7 @@ void getAngle() {
         filteredAngleX = alpha * rawAngleX + (1 - alpha) * filteredAngleX;
         filteredAngleY = alpha * rawAngleY + (1 - alpha) * filteredAngleY;
 
-        delay(5);
+        delay(1);
     }
 
     // Serial.print("Filtered Angle X: ");
@@ -138,12 +142,10 @@ void wait_to_start() {
 void setup() {
     Serial.begin(baudrate);
 
+    deltaX = deltaY = 0;
+
     wait_to_start();
 }
-
-int deltaX, deltaY;
-int beta = 1;
-int started = 0;
 
 void read() { // Use ONE and ONLY ONE println()
     while (1) {
@@ -169,52 +171,48 @@ void read() { // Use ONE and ONLY ONE println()
 }
 
 void tilt() {
+    if (deltaX < -1000 || deltaY < -1000) {
+        deltaX = deltaY = 0;
+        Serial.println("F");
+    }
     getAngle();
     float adjustAngleX, adjustAngleY;
 
     if (fabs(filteredAngleX + beta * deltaX) > deadband) {
-        // currentAngleX = constrain(currentAngleX + filteredAngleX + beta * deltaX, thetaL, thetaR);
-        // currentAngleX = constrain(currentAngleX + filteredAngleX, thetaL, thetaR);
         adjustAngleX = constrain(currentAngleX + beta * deltaX, thetaL, thetaR);
         servoX.write(adjustAngleX);
     }
     if (fabs(filteredAngleY + beta * deltaY) > deadband) {
-        // currentAngleY = constrain(currentAngleY + filteredAngleY + beta * deltaY, thetaL, thetaR);
-        // currentAngleY = constrain(currentAngleY + filteredAngleY, thetaL, thetaR);
         adjustAngleY = constrain(currentAngleY + beta * deltaY, thetaL, thetaR);
         servoY.write(adjustAngleY);
     }
+    
+    Serial.println("R");
 
-    Serial.print("Current Angle X: ");
-    Serial.print(adjustAngleX);
-    Serial.print(", Current Angle Y: ");
-    Serial.println(adjustAngleY);
+    // Serial.print("Current Angle X: ");
+    // Serial.print(adjustAngleX);
+    // Serial.print(", Current Angle Y: ");
+    // Serial.println(adjustAngleY);
+    // Serial.print("X = ");
+    // Serial.print(deltaX * beta);
+    // Serial.print(", Y = ");
+    // Serial.println(deltaY * beta);
 
-    delay(100);
-}
-
-void test() {
-    initialize();
-    deltaX = 0;
-    deltaY = 10;
-    while (1) tilt();
+    // delay(100);
 }
 
 int dx[] = {5,5,5,5};
 int dy[] = {5,5,5,5};
 
-void loop() {
-    // initialize();
-    // test();
-    // wait_to_start();
-    // read();
-
+void test() {
     t = (t + 1) % 4;
-
+    
     deltaX = dx[t];
     deltaY = dy[t];
+}
 
+void loop() {
+    // test();
+    read();
     tilt();
-
-    delay(60);
 }

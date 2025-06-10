@@ -15,17 +15,19 @@ log = logging.getLogger(__name__)
 
 def get_instruction(cap):
     # Read the current frame from the webcam
-    current_grid = grab_info(cap=cap, rows=150, cols=150)
+    current_grid = grab_info(cap=cap)
     if current_grid is None:
-        return (0, 0)
+        logging.error("Failed to grab grid information from webcam.")
+        return (-1001, -1001)
 
     # Process the grid to find the ball and target positions
     graph, ball_pos, tar_pos = process_grid(current_grid)
     if ball_pos is None or tar_pos is None:
-        return (0, 0)
+        logging.error("Ball or target position not found in the grid.")
+        return (-1001, -1001)
 
     # BFS
-    overall_direction = breadth_first_search(graph, tar_pos, ball_pos)
+    overall_direction = breadth_first_search(graph=graph, source=tar_pos, target=ball_pos)
     return overall_direction
 
 def send_instruction(arduino, instruction: str):
@@ -58,15 +60,18 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
         instruction = get_instruction(cap=cap)
         
         # Send the instruction
-        # instruction_to_send = f"{instruction[1]},{-instruction[0]}"
-        instruction_to_send = f"0,5"
+        if instruction == (-1001, -1001):
+            instruction_to_send = "-1001,-1001"
+        else:
+            # instruction_to_send = f"{(abs(instruction[1])/instruction[1]) * np.sqrt(abs(instruction[1])) * 4 // 2},{-(abs(instruction[0])/instruction[0]) * np.sqrt(abs(instruction[0])) * 4 // 2}"
+            instruction_to_send = f"{instruction[1]},{-instruction[0]}"
+        
         send_instruction(arduino=arduino, instruction=instruction_to_send)
         logging.info(f"Instruction sent: {instruction_to_send}")
 
         _ = read_message(arduino)
         _ = read_message(arduino)
-        logging.info(f"Arduino says: {_}")
-        # logging.info(f"Instruction received by Arduino.")
+        logging.info(f"Arduino received: {_}")
 
         # Exit on 'q' key
         if cv2.waitKey(1) & 0xFF == ord('q'):

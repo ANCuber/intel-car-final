@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-def grab_info(cap, rows=100, cols=100, rlength=900, clength=900): # Grid size
+def grab_info(cap, rows=150, cols=200, rlength=900, clength=1200): # Grid size
     # Wrong inputs
     if rlength % rows != 0 or clength % cols != 0:
         raise ValueError("rows and cols must divide length evenly.")
@@ -13,7 +13,7 @@ def grab_info(cap, rows=100, cols=100, rlength=900, clength=900): # Grid size
         return None
     
     # Resize for consistent processing
-    frame = cv2.resize(frame, (rlength, clength))
+    frame = cv2.resize(frame, (clength, rlength))
     h, w, _ = frame.shape
 
     # Initialize classification grid
@@ -28,10 +28,11 @@ def grab_info(cap, rows=100, cols=100, rlength=900, clength=900): # Grid size
     mask_red2 = cv2.inRange(hsv, np.array([160, 100, 100]), np.array([180, 255, 255]))
     mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
-    mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 90]))
+    mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 100]))
     mask_white = cv2.inRange(hsv, np.array([0, 0, 120]), np.array([180, 50, 255]))
     mask_green = cv2.inRange(hsv, np.array([40, 100, 100]), np.array([85, 255, 255]))
     mask_blue = cv2.inRange(hsv, np.array([100, 100, 100]), np.array([130, 255, 255]))
+    mask_orange = cv2.inRange(hsv, np.array([5, 100, 100]), np.array([25, 255, 255]))
 
     # Analyze each grid cell
     threshold = cell_h * cell_w * 2 // 3 # Threshold for minimum pixel count
@@ -45,21 +46,26 @@ def grab_info(cap, rows=100, cols=100, rlength=900, clength=900): # Grid size
             white = mask_white[y1:y2, x1:x2]
             green = mask_green[y1:y2, x1:x2]
             blue = mask_blue[y1:y2, x1:x2]
+            orange = mask_orange[y1:y2, x1:x2]
 
             red_count = cv2.countNonZero(red)
             black_count = cv2.countNonZero(black)
             white_count = cv2.countNonZero(white)
             green_count = cv2.countNonZero(green)
             blue_count = cv2.countNonZero(blue)
+            orange_count = cv2.countNonZero(orange)
 
-            if red_count > black_count and red_count > white_count and red_count > threshold:
+            if orange_count > threshold:
+                classification[i][j] = 'O'
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 165, 255), 1)
+            elif red_count > threshold:
                 classification[i][j] = 'R'
                 # Draw color blocks on frame
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 1)
-            elif green_count > max(red_count, black_count, white_count) and green_count > threshold:
+            elif green_count > threshold:
                 classification[i][j] = 'G'
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)
-            elif black_count > white_count and black_count > threshold:
+            elif black_count > threshold:
                 classification[i][j] = 'D'
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 0), 1)
             elif white_count > threshold:
@@ -68,7 +74,7 @@ def grab_info(cap, rows=100, cols=100, rlength=900, clength=900): # Grid size
             elif blue_count > threshold:
                 classification[i][j] = 'B' 
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 1)
-
+            
     # Show result
     cv2.imshow("Webcam Maze Detection", frame)
     return classification
