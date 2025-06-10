@@ -1,36 +1,21 @@
 import cv2
 import numpy as np
 
-def grab_info(cap, rows=150, cols=200): # Grid size, rlength and clength removed
+def grab_info(cap, rows=150, cols=200): 
+    """Original grab_info function that just returns the classification grid"""
     desired_width = 640
     desired_height = 480
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
 
-    # Verify the resolution (optional)
-    actual_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    actual_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # print(f"Attempted to set resolution to {desired_width}x{desired_height}")
-    # print(f"Actual resolution set to {actual_width}x{actual_height}")
-
     ret, frame = cap.read()
 
     # Failed to grab frame
     if not ret:
-        return None
+        return None, None, None
     
     # Get frame dimensions directly
     h, w, _ = frame.shape
-
-    # Wrong inputs for grid division
-    if h % rows != 0 or w % cols != 0:
-        # You might want to handle this more gracefully, 
-        # e.g., by adjusting rows/cols or cropping, 
-        # or inform the user that the chosen grid doesn't fit the resolution.
-        # For now, we'll raise an error or log a warning.
-        print(f"Warning: Frame dimensions {w}x{h} are not evenly divisible by cols={cols}, rows={rows}. Grid cells might not be uniform.")
-        # Or, uncomment to raise an error:
-        # raise ValueError(f"Frame dimensions {w}x{h} must be evenly divisible by cols={cols} and rows={rows}.")
 
     # Initialize classification grid
     cell_h, cell_w = h // rows, w // cols
@@ -91,58 +76,36 @@ def grab_info(cap, rows=150, cols=200): # Grid size, rlength and clength removed
                 classification[i][j] = 'B' 
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 1)
             
-    # Show result
-    cv2.imshow("Webcam Maze Detection", frame)
-    return classification
-    
+    # Show result without path visualization yet
+    # We'll show the final visualization from main.py
+    return classification, frame, cell_h, cell_w
+
+# Adding this function for compatibility with your requested code structure
+def grab_info_and_visualize(cap, rows=150, cols=200):
+    """Alias for grab_info - returns grid, frame, cell_h, cell_w"""
+    return grab_info(cap, rows, cols)
+
 if __name__ == "__main__":
-    # Option 1: Try with a different backend like CAP_DSHOW
-    # cap = cv2.VideoCapture(1, cv2.CAP_DSHOW) 
-    # If the line above doesn't work or you want to stick to the default backend first, use:
+    # Test code
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
         print("Error: Could not open video capture.")
         exit()
 
-    # Add a small delay to allow the camera to initialize with the new settings
     import time
-    time.sleep(1.0) # Sleep for 1 second
+    time.sleep(1.0)  # Sleep for 1 second
 
-    # print("Testing camera indices with AVFoundation:")
-    # for i in range(5):
-    #     cap = cv2.VideoCapture(i, cv2.CAP_AVFOUNDATION)
-    #     if cap.isOpened():
-    #         print(f"Camera index {i} works!")
-    #         cap.release()
-
-    cnt = 1
     while True:
-        # Call grab_info without rlength and clength, adjust rows/cols as needed
-        # Ensure rows and cols are compatible with the actual_width and actual_height
-        # For example, if actual_width=320, actual_height=240:
-        # You could use rows=24, cols=32 for 10x10 cells
-        # Or rows=10, cols=10 if you want fewer, larger cells (adjust cell_h, cell_w logic or accept non-square cells)
-        # For this example, let's make rows and cols smaller to fit the new resolution
-        # and be divisible.
-        # For 320x240, let's try a 24x32 grid (10x10 pixel cells)
-        # Or, to keep it simple, let's try to make them somewhat square-ish and divisible
-        # e.g. rows=24, cols=32 (cells of 10x10)
-        # or rows=12, cols=16 (cells of 20x20)
-        
-        # Adjust these based on your needs and the actual camera resolution
         num_rows = 96 
         num_cols = 128
             
-        current_grid = grab_info(cap=cap, rows=num_rows, cols=num_cols)
+        current_grid, frame, cell_h, cell_w = grab_info(cap=cap, rows=num_rows, cols=num_cols)
         if current_grid is None:
             print("Failed to grab frame.")
             continue
         
-        if cnt % 100000:
-            # print(current_grid)
-            cnt = 0
-        cnt += 1
+        cv2.imshow("Webcam Maze Detection", frame)
 
         # Exit on 'q' key
         if cv2.waitKey(1) & 0xFF == ord('q'):
