@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 def get_instruction(cap):
     # Read the current frame from the webcam
-    current_grid = grab_info(cap=cap)
+    current_grid = grab_info(cap=cap, rows=96, cols=128)
     if current_grid is None:
         logging.error("Failed to grab grid information from webcam.")
         return (-1001, -1001)
@@ -27,7 +27,7 @@ def get_instruction(cap):
         return (-1001, -1001)
 
     # BFS
-    overall_direction = breadth_first_search(graph=graph, source=tar_pos, target=ball_pos)
+    overall_direction = breadth_first_search(graph=graph, grid=current_grid, source=tar_pos, target=ball_pos)
     return overall_direction
 
 def send_instruction(arduino, instruction: str):
@@ -64,7 +64,10 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
             instruction_to_send = "-1001,-1001"
         else:
             # instruction_to_send = f"{(abs(instruction[1])/instruction[1]) * np.sqrt(abs(instruction[1])) * 4 // 2},{-(abs(instruction[0])/instruction[0]) * np.sqrt(abs(instruction[0])) * 4 // 2}"
-            instruction_to_send = f"{4*instruction[1]},{-4*instruction[0]}"
+            instruction_to_send = f"{1*instruction[1]},{-1*instruction[0]}"
+        # a = int(input("X vec:"))
+        # b = int(input("Y vec:"))
+        # instruction_to_send = f"{a},{b}"
         
         send_instruction(arduino=arduino, instruction=instruction_to_send)
         logging.info(f"Instruction sent: {instruction_to_send}")

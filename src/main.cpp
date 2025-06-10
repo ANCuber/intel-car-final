@@ -62,9 +62,9 @@ float calculatePID(float error, float &prevError, float &integral) {
 void getAngle() {
     sensors_event_t event;
     filteredAngleX = filteredAngleY = 0.0;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
         accel.getEvent(&event);
-        float rawAngleX = 3.8 - calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
+        float rawAngleX =  5.0 - calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
         float rawAngleY = -2.2 + calculateAngle(event.acceleration.y, event.acceleration.x, event.acceleration.z);
 
         filteredAngleX = alpha * rawAngleX + (1 - alpha) * filteredAngleX;
@@ -116,11 +116,11 @@ void initialize() {
     // Serial.println(currentAngleY);
 
     // Serial.println("Servos initialized, starting in a few seconds.");
-    delay(2500);
+    delay(1000);
 
     for (int i = 0; i < 5; ++i) {
         adjust(); // Initial adjustment based on sensor data
-        delay(100);
+        delay(500);
     }
 }
 
@@ -130,6 +130,7 @@ void copy_instruction() {
 
 void wait_to_start() {
     while (1) {
+        // break;
         if (Serial.available()) {
             String message = Serial.readStringUntil('\n');
             break;
