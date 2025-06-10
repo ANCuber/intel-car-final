@@ -23,8 +23,7 @@ const float thetaR = theta0 + thetaRange;
 const float deadband = 0.85;
 float currentAngleX = theta0;
 float currentAngleY = theta0;
-bool flgX = 0;
-bool flgY = 0;
+int t = 0;
 
 // Serial I/O
 const int32_t baudrate = 115200;
@@ -78,7 +77,7 @@ void getAngle() {
 
 
 
-void noobAdjust() {
+void adjust() {
     getAngle();
 
     if (fabs(filteredAngleX) > deadband) {
@@ -89,10 +88,6 @@ void noobAdjust() {
         currentAngleY = constrain(currentAngleY + filteredAngleY, thetaL, thetaR);
         servoY.write(currentAngleY);
     }
-}
-
-void setup() {
-    Serial.begin(baudrate);
 }
 
 void initialize() {
@@ -120,13 +115,30 @@ void initialize() {
     delay(2500);
 
     for (int i = 0; i < 5; ++i) {
-        noobAdjust(); // Initial adjustment based on sensor data
+        adjust(); // Initial adjustment based on sensor data
         delay(100);
     }
 }
 
 void copy_instruction() {
     Serial.println("G");
+}
+
+void wait_to_start() {
+    while (1) {
+        if (Serial.available()) {
+            String message = Serial.readStringUntil('\n');
+            break;
+        }
+    }
+    initialize(); 
+    copy_instruction();
+}
+
+void setup() {
+    Serial.begin(baudrate);
+
+    wait_to_start();
 }
 
 int deltaX, deltaY;
@@ -162,13 +174,13 @@ void tilt() {
 
     if (fabs(filteredAngleX + beta * deltaX) > deadband) {
         // currentAngleX = constrain(currentAngleX + filteredAngleX + beta * deltaX, thetaL, thetaR);
-        currentAngleX = constrain(currentAngleX + filteredAngleX, thetaL, thetaR);
+        // currentAngleX = constrain(currentAngleX + filteredAngleX, thetaL, thetaR);
         adjustAngleX = constrain(currentAngleX + beta * deltaX, thetaL, thetaR);
         servoX.write(adjustAngleX);
     }
     if (fabs(filteredAngleY + beta * deltaY) > deadband) {
         // currentAngleY = constrain(currentAngleY + filteredAngleY + beta * deltaY, thetaL, thetaR);
-        currentAngleY = constrain(currentAngleY + filteredAngleY, thetaL, thetaR);
+        // currentAngleY = constrain(currentAngleY + filteredAngleY, thetaL, thetaR);
         adjustAngleY = constrain(currentAngleY + beta * deltaY, thetaL, thetaR);
         servoY.write(adjustAngleY);
     }
@@ -181,20 +193,6 @@ void tilt() {
     delay(100);
 }
 
-void wait_to_start() {
-    if (started) return;
-    started = 1;
-    while (1) {
-        if (Serial.available()) {
-            String message = Serial.readStringUntil('\n');
-            break;
-        }
-    }
-    initialize(); 
-    copy_instruction();
-}
-
-
 void test() {
     initialize();
     deltaX = 0;
@@ -202,9 +200,21 @@ void test() {
     while (1) tilt();
 }
 
+int dx[] = {5,5,5,5};
+int dy[] = {5,5,5,5};
+
 void loop() {
-    test();
-    wait_to_start();
-    read();
+    // initialize();
+    // test();
+    // wait_to_start();
+    // read();
+
+    t = (t + 1) % 4;
+
+    deltaX = dx[t];
+    deltaY = dy[t];
+
     tilt();
+
+    delay(60);
 }
