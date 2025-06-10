@@ -64,12 +64,11 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
             instruction_to_send = "-1001,-1001"
         else:
             # instruction_to_send = f"{(abs(instruction[1])/instruction[1]) * np.sqrt(abs(instruction[1])) * 4 // 2},{-(abs(instruction[0])/instruction[0]) * np.sqrt(abs(instruction[0])) * 4 // 2}"
-            instruction_to_send = f"{instruction[1]},{-instruction[0]}"
+            instruction_to_send = f"{4*instruction[1]},{-4*instruction[0]}"
         
         send_instruction(arduino=arduino, instruction=instruction_to_send)
         logging.info(f"Instruction sent: {instruction_to_send}")
 
-        _ = read_message(arduino)
         _ = read_message(arduino)
         logging.info(f"Arduino received: {_}")
 

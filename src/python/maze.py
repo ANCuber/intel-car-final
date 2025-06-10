@@ -29,7 +29,7 @@ def process_grid(current_grid, ball_color='R', wall_color='D', floor_color='W', 
 
     return graph, ball_pos, tar_pos
 
-def breadth_first_search(graph, source, target, next_level=3):
+def breadth_first_search(graph, source, target, next_level=5):
     if graph[source[0]][source[1]] == 1 or graph[target[0]][target[1]] == 1:
         logging.error("Source or target is a wall.")
         return (-1001, -1001)
@@ -38,7 +38,7 @@ def breadth_first_search(graph, source, target, next_level=3):
         logging.info("No movement needed.")
         return (0, 0) # Do not move if we are already at the source
     
-    directions = 8
+    directions = 4
     dx = [1, -1, 0, 0, 1, -1, 1, -1]
     dy = [0, 0, 1, -1, 1, -1, -1, 1]
 
@@ -72,17 +72,32 @@ def breadth_first_search(graph, source, target, next_level=3):
         
     # Return the overall direction
     overall_direction = (0, 0)
+    prv = None
     current_grid = target
-    alpha = [3, 3, 3]
+    alpha = [200, 80, 50, 30, 20, 7, 5, 3, 3, 3]
 
-    for i in range(next_level):
-        # Not sure if we should stop here
+    # for i in range(next_level * 200):
+    # for i in range(next_level):
+    #     # Not sure if we should stop here
+    #     if current_grid == source:
+    #         break
+    #         # return (0, 0) 
+        
+    #     dir = visited[current_grid[0]][current_grid[1]]
+    #     if i < next_level:
+    #         overall_direction = (overall_direction[0] + dx[dir] * alpha[i], overall_direction[1] + dy[dir] * alpha[i])
+    #     current_grid = (current_grid[0] + dx[dir], current_grid[1] + dy[dir])
+    #     # print("Move to", current_grid)
+    for i in range(100):
         if current_grid == source:
             break
-            # return (0, 0) 
         
         dir = visited[current_grid[0]][current_grid[1]]
-        overall_direction = (overall_direction[0] + dx[dir] * alpha[i], overall_direction[1] + dy[dir] * alpha[i])
+        if prv and prv != dir:
+            return (overall_direction[0] // i + dx[dir], overall_direction[1] // i + dy[dir]) 
+        else:
+            prv = dir
+        overall_direction = (overall_direction[0] + dx[dir], overall_direction[1] + dy[dir])
         current_grid = (current_grid[0] + dx[dir], current_grid[1] + dy[dir])
 
-    return ((overall_direction[0]) // 2, (overall_direction[1]) // 2)
+    return ((overall_direction[0]) // 50, (overall_direction[1]) // 50)

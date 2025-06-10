@@ -159,7 +159,6 @@ void read() { // Use ONE and ONLY ONE println()
             deltaX = part1.toInt();
             deltaY = part2.toInt();
 
-            copy_instruction();
             // Serial.print("First received number: ");
             // Serial.print(deltaX);
             // Serial.print(", Second received number: ");
@@ -173,7 +172,6 @@ void read() { // Use ONE and ONLY ONE println()
 void tilt() {
     if (deltaX < -1000 || deltaY < -1000) {
         deltaX = deltaY = 0;
-        Serial.println("F");
     }
     getAngle();
     float adjustAngleX, adjustAngleY;
