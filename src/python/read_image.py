@@ -32,10 +32,9 @@ def grab_info(cap, rows=216, cols=384):
     mask_red2 = cv2.inRange(hsv, np.array([160, 100, 100]), np.array([180, 255, 255]))
     mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
-    mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 150]))
-    mask_deepblue = cv2.inRange(hsv, np.array([100, 100, 0]), np.array([130, 255, 60]))
-    mask_black = cv2.bitwise_or(mask_black, mask_deepblue)
-
+    mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 100]))
+    # mask_deepblue = cv2.inRange(hsv, np.array([100, 100, 0]), np.array([130, 255, 60]))
+    # mask_black = cv2.bitwise_or(mask_black, mask_deepblue)
 
     mask_white = cv2.inRange(hsv, np.array([0, 0, 120]), np.array([180, 50, 255]))
     mask_green = cv2.inRange(hsv, np.array([40, 100, 100]), np.array([85, 255, 255]))
