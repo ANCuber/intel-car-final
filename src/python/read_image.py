@@ -1,12 +1,15 @@
 import cv2
 import numpy as np
 
-def grab_info(cap, rows=150, cols=200): 
+def grab_info(cap, rows=216, cols=384): 
     """Original grab_info function that just returns the classification grid"""
-    desired_width = 640
-    desired_height = 480
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
+    # desired_width = 640
+    # desired_height = 480
+    # desired_width = 256 * 4 // 3
+    # desired_height = 192 * 4 // 3
+
+    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
+    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
 
     ret, frame = cap.read()
 
@@ -29,7 +32,7 @@ def grab_info(cap, rows=150, cols=200):
     mask_red2 = cv2.inRange(hsv, np.array([160, 100, 100]), np.array([180, 255, 255]))
     mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
-    mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 100]))
+    mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 120]))
     mask_white = cv2.inRange(hsv, np.array([0, 0, 120]), np.array([180, 50, 255]))
     mask_green = cv2.inRange(hsv, np.array([40, 100, 100]), np.array([85, 255, 255]))
     mask_blue = cv2.inRange(hsv, np.array([100, 100, 100]), np.array([130, 255, 255]))
@@ -81,7 +84,7 @@ def grab_info(cap, rows=150, cols=200):
     return classification, frame, cell_h, cell_w
 
 # Adding this function for compatibility with your requested code structure
-def grab_info_and_visualize(cap, rows=150, cols=200):
+def grab_info_and_visualize(cap, rows=216, cols=384):
     """Alias for grab_info - returns grid, frame, cell_h, cell_w"""
     return grab_info(cap, rows, cols)
 
@@ -97,8 +100,8 @@ if __name__ == "__main__":
     time.sleep(1.0)  # Sleep for 1 second
 
     while True:
-        num_rows = 96 
-        num_cols = 128
+        num_rows = 216
+        num_cols = 384
             
         current_grid, frame, cell_h, cell_w = grab_info(cap=cap, rows=num_rows, cols=num_cols)
         if current_grid is None:

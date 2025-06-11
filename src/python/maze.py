@@ -97,7 +97,7 @@ def t_breadth_first_search(graph, grid, source, target, next_level=5):
     
     return path, ((overall_direction[0]) // 100, (overall_direction[1]) // 100)
 
-def breadth_first_search(graph, grid, source, target, next_level=5):
+def breadth_first_search(graph, grid, source, target, next_level=20):
     if graph[source[0]][source[1]] == 1 or graph[target[0]][target[1]] == 1:
         logging.error("Source or target is a wall.")
         return None, (-1001, -1001)
@@ -148,7 +148,10 @@ def breadth_first_search(graph, grid, source, target, next_level=5):
     current_grid = target
     path = []
     overall_direction = (0, 0)
-    alpha = [200, 80, 50, 30, 20, 7, 5, 3, 3, 3]
+    
+    # alpha = [200, 80, 50, 30, 20, 10, 10, 10, 3, 3]
+    alpha = np.array([(i - 10) ** 2 - 5 for i in range(next_level)])
+    sum = np.sum(alpha) / 2
 
     for i in range(next_level):
         path.append(current_grid)
@@ -167,7 +170,7 @@ def breadth_first_search(graph, grid, source, target, next_level=5):
     # Reverse path to go from source to target (more intuitive for visualization)
     path.reverse()
 
-    return path, (overall_direction[0] // 100, overall_direction[1] // 100)
+    return path, (overall_direction[0] // sum, overall_direction[1] // sum)
 
 def visualize_path_on_frame(frame, path, cell_h, cell_w):
     """Draw the BFS path on the frame"""

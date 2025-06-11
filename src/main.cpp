@@ -65,7 +65,7 @@ void getAngle() {
     for (int i = 0; i < 20; i++) {
         accel.getEvent(&event);
         float rawAngleX =  5.0 - calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
-        float rawAngleY = -2.2 + calculateAngle(event.acceleration.y, event.acceleration.x, event.acceleration.z);
+        float rawAngleY = -4.2 + calculateAngle(event.acceleration.y, event.acceleration.x, event.acceleration.z);
 
         filteredAngleX = alpha * rawAngleX + (1 - alpha) * filteredAngleX;
         filteredAngleY = alpha * rawAngleY + (1 - alpha) * filteredAngleY;
@@ -145,6 +145,7 @@ void setup() {
 
     deltaX = deltaY = 0;
 
+    initialize();
     wait_to_start();
 }
 
