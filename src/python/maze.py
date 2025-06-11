@@ -34,7 +34,7 @@ def process_grid(current_grid, ball_color='R', wall_color='D', floor_color='W', 
 
     return graph, ball_pos, tar_pos
 
-def breadth_first_search(graph, grid, source, target, next_level=20):
+def breadth_first_search(graph, grid, source, target, next_level=12):
     if graph[source[0]][source[1]] == 1 or graph[target[0]][target[1]] == 1:
         logging.error("Source or target is a wall.")
         return None, (-1001, -1001)
