@@ -140,6 +140,7 @@ void wait_to_start() {
 
 void setup() {
     Serial.begin(baudrate);
+    Serial.setTimeout(10);
 
     deltaX = deltaY = 0;
 

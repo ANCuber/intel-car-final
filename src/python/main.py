@@ -63,7 +63,7 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
     time.sleep(0.5)
 
     # Build serial connection
-    arduino = serial.Serial(port=port, baudrate=baudrate, timeout=0.01)
+    arduino = serial.Serial(port=port, baudrate=baudrate, timeout=0.05)
     time.sleep(sleep_time)  # Wait for the connection to establish
 
     logging.info("Arduino resetting...")
@@ -73,13 +73,10 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
 
     # Main loop
     previouse_instruction = (-1001, -1001)
-    beta = 2
+    beta = 1
     while True:
         # Get the instruction
-        start = time.time()
-        # instruction = get_instruction(cap=cap)
-        instruction = (-1001, -1001)
-        instruction_to_send = "-1001,-1001"
+        instruction = get_instruction(cap=cap)
         
         # Send the instruction
         if instruction == (-1001, -1001):
@@ -87,22 +84,17 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
         else:
             # instruction_to_send = f"{(abs(instruction[1])/instruction[1]) * np.sqrt(abs(instruction[1])) * 4 // 2},{-(abs(instruction[0])/instruction[0]) * np.sqrt(abs(instruction[0])) * 4 // 2}"
             if (instruction[1], -instruction[0]) == previouse_instruction:
-                beta += 2
+                beta += 1
             else:
-                beta = 2
-            instruction_to_send = f"{beta*instruction[1]},{-beta*instruction[0]}"
+                beta = 1
+            instruction_to_send = f"{beta*instruction[1]},{-beta*instruction[0]}\n"
             previouse_instruction = (instruction[1], -instruction[0])
-        end = time.time()
-        print(f"Instruction finding time: {end - start:.6f} seconds")
-        
-        start = time.time()
+
         send_instruction(arduino=arduino, instruction=instruction_to_send)
         logging.info(f"Instruction sent: {instruction_to_send}")
 
         _ = read_message(arduino)
         logging.info(f"Arduino received: {_}")
-        end = time.time()
-        print(f"Communicating time: {end - start:.6f} seconds")
 
         # Exit on 'q' key
         if cv2.waitKey(1) & 0xFF == ord('q'):
