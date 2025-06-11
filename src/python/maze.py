@@ -7,7 +7,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-def process_grid(current_grid, ball_color='R', wall_color='D', floor_color='W', target_color='G'):
+def process_grid(current_grid, ball_color='B', wall_color='D', floor_color='W', target_color='G'):
     cols, rows = len(current_grid[0]), len(current_grid)
     graph = [[0 for _ in range(cols)] for _ in range(rows)]
     ball_pos, ball_cnt = (0, 0), 0

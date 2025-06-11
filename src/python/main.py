@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 def get_instruction(cap):
     # Read the current frame from the webcam
     current_grid, frame, cell_h, cell_w = grab_info(cap=cap, rows=108, cols=192)
-    print("Current grid shape:", np.shape(current_grid))
     if current_grid is None:
         logging.error("Failed to grab grid information from webcam.")
         return None, (-1001, -1001)
@@ -64,7 +63,7 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
     time.sleep(0.5)
 
     # Build serial connection
-    arduino = serial.Serial(port=port, baudrate=baudrate, timeout=1)
+    arduino = serial.Serial(port=port, baudrate=baudrate, timeout=0.01)
     time.sleep(sleep_time)  # Wait for the connection to establish
 
     logging.info("Arduino resetting...")
@@ -74,10 +73,13 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
 
     # Main loop
     previouse_instruction = (-1001, -1001)
-    beta = 1
+    beta = 2
     while True:
         # Get the instruction
-        instruction = get_instruction(cap=cap)
+        start = time.time()
+        # instruction = get_instruction(cap=cap)
+        instruction = (-1001, -1001)
+        instruction_to_send = "-1001,-1001"
         
         # Send the instruction
         if instruction == (-1001, -1001):
@@ -85,18 +87,22 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
         else:
             # instruction_to_send = f"{(abs(instruction[1])/instruction[1]) * np.sqrt(abs(instruction[1])) * 4 // 2},{-(abs(instruction[0])/instruction[0]) * np.sqrt(abs(instruction[0])) * 4 // 2}"
             if (instruction[1], -instruction[0]) == previouse_instruction:
-                beta += 1
+                beta += 2
             else:
-                beta = 1
+                beta = 2
             instruction_to_send = f"{beta*instruction[1]},{-beta*instruction[0]}"
             previouse_instruction = (instruction[1], -instruction[0])
-        print("Current instruction:", instruction_to_send)
-        print("Previous instruction:", previouse_instruction)
+        end = time.time()
+        print(f"Instruction finding time: {end - start:.6f} seconds")
+        
+        start = time.time()
         send_instruction(arduino=arduino, instruction=instruction_to_send)
         logging.info(f"Instruction sent: {instruction_to_send}")
 
         _ = read_message(arduino)
         logging.info(f"Arduino received: {_}")
+        end = time.time()
+        print(f"Communicating time: {end - start:.6f} seconds")
 
         # Exit on 'q' key
         if cv2.waitKey(1) & 0xFF == ord('q'):

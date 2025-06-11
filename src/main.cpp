@@ -62,15 +62,13 @@ float calculatePID(float error, float &prevError, float &integral) {
 void getAngle() {
     sensors_event_t event;
     filteredAngleX = filteredAngleY = 0.0;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 10; i++) {
         accel.getEvent(&event);
         float rawAngleX =  4.0 - calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
         float rawAngleY = -4.2 + calculateAngle(event.acceleration.y, event.acceleration.x, event.acceleration.z);
 
         filteredAngleX = alpha * rawAngleX + (1 - alpha) * filteredAngleX;
         filteredAngleY = alpha * rawAngleY + (1 - alpha) * filteredAngleY;
-
-        delay(1);
     }
 
     // Serial.print("Filtered Angle X: ");
@@ -217,5 +215,4 @@ void loop() {
     read();
     tilt();
 
-    if (t % 20 == 0) initialize(3, 500);
 }
