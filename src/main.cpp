@@ -64,7 +64,7 @@ void getAngle() {
     filteredAngleX = filteredAngleY = 0.0;
     for (int i = 0; i < 20; i++) {
         accel.getEvent(&event);
-        float rawAngleX =  5.0 - calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
+        float rawAngleX =  4.0 - calculateAngle(event.acceleration.x, event.acceleration.y, event.acceleration.z);
         float rawAngleY = -4.2 + calculateAngle(event.acceleration.y, event.acceleration.x, event.acceleration.z);
 
         filteredAngleX = alpha * rawAngleX + (1 - alpha) * filteredAngleX;
@@ -94,7 +94,7 @@ void adjust() {
     }
 }
 
-void initialize() {
+void initialize(int T, int interval) {
     // Initialize the sensor
     if (!accel.begin()) {
         Serial.println("No ADXL345 sensor detected!");
@@ -116,11 +116,11 @@ void initialize() {
     // Serial.println(currentAngleY);
 
     // Serial.println("Servos initialized, starting in a few seconds.");
-    delay(1000);
+    delay(500);
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < T; ++i) {
         adjust(); // Initial adjustment based on sensor data
-        delay(500);
+        delay(interval);
     }
 }
 
@@ -136,7 +136,7 @@ void wait_to_start() {
             break;
         }
     }
-    initialize(); 
+    initialize(3, 500); 
     copy_instruction();
 }
 
@@ -145,7 +145,7 @@ void setup() {
 
     deltaX = deltaY = 0;
 
-    initialize();
+    initialize(2, 500);
     wait_to_start();
 }
 
@@ -212,7 +212,10 @@ void test() {
 }
 
 void loop() {
+    t = t + 1;
     // test();
     read();
     tilt();
+
+    if (t % 20 == 0) initialize(3, 500);
 }

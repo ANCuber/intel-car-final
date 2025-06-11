@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 def get_instruction(cap):
     # Read the current frame from the webcam
-    current_grid, frame, cell_h, cell_w = grab_info(cap=cap, rows=216, cols=384)
+    current_grid, frame, cell_h, cell_w = grab_info(cap=cap, rows=108, cols=192)
     print("Current grid shape:", np.shape(current_grid))
     if current_grid is None:
         logging.error("Failed to grab grid information from webcam.")
@@ -28,7 +28,7 @@ def get_instruction(cap):
         return frame, (-1001, -1001)
 
     # BFS - now returns both path and direction
-    path, overall_direction = breadth_first_search(graph=graph, grid=current_grid, source=tar_pos, target=ball_pos)
+    path, overall_direction = breadth_first_search(graph=graph, grid=current_grid, source=tar_pos, target=ball_pos, next_level=10)
     
     # Visualize the path on the frame
     if path:
