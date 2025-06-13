@@ -15,7 +15,7 @@ def grab_info(cap, rows=216, cols=384):
 
     # Failed to grab frame
     if not ret:
-        return None, None, None
+        return None, None, None, None
     
     # Get frame dimensions directly
     h, w, _ = frame.shape
@@ -37,8 +37,8 @@ def grab_info(cap, rows=216, cols=384):
     # mask_black = cv2.bitwise_or(mask_black, mask_deepblue)
 
     mask_white = cv2.inRange(hsv, np.array([0, 0, 120]), np.array([180, 50, 255]))
-    mask_green = cv2.inRange(hsv, np.array([40, 100, 100]), np.array([85, 255, 255]))
-    mask_blue = cv2.inRange(hsv, np.array([100, 100, 100]), np.array([130, 255, 255]))
+    mask_green = cv2.inRange(hsv, np.array([40, 100, 60]), np.array([85, 255, 255]))
+    mask_blue = cv2.inRange(hsv, np.array([95, 100, 80]), np.array([135, 255, 255]))
     mask_orange = cv2.inRange(hsv, np.array([5, 100, 100]), np.array([25, 255, 255]))
 
     # Analyze each grid cell

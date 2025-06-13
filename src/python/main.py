@@ -18,13 +18,13 @@ def get_instruction(cap):
     current_grid, frame, cell_h, cell_w = grab_info(cap=cap, rows=108, cols=192)
     if current_grid is None:
         logging.error("Failed to grab grid information from webcam.")
-        return None, (-1001, -1001)
+        return (-1001, -1001)
 
     # Process the grid to find the ball and target positions
     graph, ball_pos, tar_pos = process_grid(current_grid)
     if ball_pos is None or tar_pos is None:
         logging.error("Ball or target position not found in the grid.")
-        return frame, (-1001, -1001)
+        return (-1001, -1001)
 
     # BFS - now returns both path and direction
     path, overall_direction = breadth_first_search(graph=graph, grid=current_grid, source=tar_pos, target=ball_pos, next_level=10)
@@ -52,6 +52,8 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
     cap = cv2.VideoCapture(cam_id)
     if not cap.isOpened():
         raise RuntimeError("Could not open webcam.")
+    cap.set(cv2.CAP_PROP_CONTRAST, 0.8)   # 0~1 之間試試看
+    cap.set(cv2.CAP_PROP_SATURATION, 0.8)
     
     # Set resolution for better visualization
     # desired_width = 640
@@ -87,7 +89,7 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
                 beta += 1
             else:
                 beta = 1
-            instruction_to_send = f"{beta*instruction[1]},{-beta*instruction[0]}\n"
+            instruction_to_send = f"{beta*instruction[1] + 1},{-beta*instruction[0]}\n"
             previouse_instruction = (instruction[1], -instruction[0])
 
         send_instruction(arduino=arduino, instruction=instruction_to_send)
@@ -107,4 +109,4 @@ def main(port: str, cam_id: int, baudrate: int = 115200, sleep_time: int = 1.5):
 
 if __name__ == "__main__":
     # Update port and cam_id for your system
-    main(port="/dev/cu.usbserial-120", cam_id=0)
+    main(port="/dev/cu.usbserial-130", cam_id=0)
